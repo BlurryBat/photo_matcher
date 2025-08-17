@@ -59,7 +59,7 @@ function App() {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify({
-                    model: "gpt-4o",
+                    model: "gpt-4o-mini",
                     input: [
                         {
                             role: "user",
