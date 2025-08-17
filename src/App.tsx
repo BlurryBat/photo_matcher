@@ -16,29 +16,15 @@ function App() {
         if (e.target.files) setGroupPhotos(Array.from(e.target.files));
     };
 
-    // 👉 Robust normalizer for model output
+    // ✅ Use the model's indices as-is (1-based), only validate & clean.
     function normalizeIndices(raw: unknown, groupCount: number): number[] {
-        // ensure array
         const arr = Array.isArray(raw) ? raw : [];
-        // convert "7" -> 7, trim whitespace, drop NaN
-        let nums = arr
-            .map((v) => (typeof v === "string" ? parseInt(v.trim(), 10) : v))
-            .filter((v): v is number => Number.isFinite(v));
 
-        // Heuristic: model sometimes counts the reference image.
-        // If all values are within [2, groupCount+1], shift down by 1.
-        const allWithin2ToN1 =
-            nums.length > 0 && nums.every((n) => n >= 2 && n <= groupCount + 1);
-        if (allWithin2ToN1) {
-            nums = nums.map((n) => n - 1);
-        }
+        const nums = arr
+            .map((v) => (typeof v === "string" ? Number(v.trim()) : v))
+            .filter((v): v is number => Number.isInteger(v));
 
-        // Also: if ANY value is > groupCount, shift down (reference included)
-        if (nums.some((n) => n > groupCount)) {
-            nums = nums.map((n) => n - 1);
-        }
-
-        // keep only [1..groupCount], dedupe, sort
+        // Keep only indices in [1..groupCount], dedupe, sort
         const cleaned = Array.from(new Set(nums.filter((n) => n >= 1 && n <= groupCount)));
         cleaned.sort((a, b) => a - b);
         return cleaned;
