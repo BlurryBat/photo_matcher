@@ -82,13 +82,11 @@ function App() {
                                     type: "input_text",
                                     text: `
 Compare the reference photo to the group photos.
-Return ONLY the indices (1-based) of images where the same person is present, 
-as a JSON array like [1,3,4].
-
-⚠️ Important:
-- Indices refer ONLY to the GROUP photos (not the reference image).
-- If the reference photo is also present in the group, include its GROUP index.
-- Do not return anything except the JSON array.
+Return ONLY the indices (1-based) of images where the same person is present,
+as a pure JSON array, e.g. [1,3,4].
+No extra text, no explanations, no keys, just the array.
+Indices refer ONLY to the GROUP photos (not the reference).
+If the reference photo is also present in the group, include its GROUP index.
                   `,
                                 },
                                 { type: "input_image", image_url: referenceBase64 },
@@ -105,14 +103,24 @@ as a JSON array like [1,3,4].
             const output = data.output?.[0]?.content?.[0]?.text || "";
             setOutputText(output);
 
+            let parsed: number[] = [];
             try {
-                const parsed = JSON.parse(output);
-                const normalized = normalizeIndices(parsed, groupPhotos.length);
-                setMatchedIndices(normalized);
-            } catch (e) {
-                console.error("Could not parse output as JSON array:", output);
-                setMatchedIndices([]);
+                // Try direct JSON parse
+                parsed = JSON.parse(output);
+            } catch {
+                // Fallback: regex extract the first [...] array
+                const match = output.match(/\[[\d,\s]+\]/);
+                if (match) {
+                    try {
+                        parsed = JSON.parse(match[0]);
+                    } catch (e) {
+                        console.error("Regex parse failed:", e);
+                    }
+                }
             }
+
+            const normalized = normalizeIndices(parsed, groupPhotos.length);
+            setMatchedIndices(normalized);
         } catch (err) {
             console.error("Error:", err);
         } finally {
